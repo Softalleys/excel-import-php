@@ -6,7 +6,7 @@ networks:
         driver: bridge
 
 services:
-    server:
+    upload-detentions-file:
         image: webdevops/php-nginx-dev:8.3
         ports:
             - 5556:80

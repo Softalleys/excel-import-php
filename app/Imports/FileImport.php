@@ -16,6 +16,7 @@ use Throwable;
 
 class FileImport implements ToModel, WithHeadingRow, WithValidation, SkipsEmptyRows, SkipsOnError, SkipsOnFailure
 {
+    private $folios = [];
     /**
     * @param array $row
     *
@@ -24,6 +25,11 @@ class FileImport implements ToModel, WithHeadingRow, WithValidation, SkipsEmptyR
     */
     public function model(array $row)
     {
+        if (in_array($row['folio'], $this->folios)) {
+            return null;
+        }
+        $this->folios[] = $row['folio'];
+
         return new File([
             'fecha' => $this->tryGetExcelDate($row['fecha']),
             'folio' => $row['folio'],
