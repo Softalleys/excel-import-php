@@ -1,0 +1,21 @@
+version: '3.5'
+
+networks:
+    databases:
+        external: true
+        driver: bridge
+
+services:
+    server:
+        image: webdevops/php-nginx-dev:8.3
+        ports:
+            - 5556:80
+        environment:
+            - PHP_MEMORY_LIMIT=2G
+            - PHP_POST_MAX_SIZE=500M
+            - PHP_UPLOAD_MAX_FILESIZE=500M
+            - WEB_DOCUMENT_ROOT=/app/public
+        volumes:
+            - .:/app
+        networks:
+            - databases
