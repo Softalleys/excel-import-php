@@ -29,31 +29,32 @@ class FileImport implements ToModel, WithHeadingRow, WithValidation, SkipsEmptyR
     * @return int
     */
     public function model(array $row)
-    {
-        if (in_array($row['folio'], $this->folios)) {
-            return null;
-        }
-        $this->folios[] = $row['folio'];
-
-        $fecha = $this->tryGetExcelDate($row['fecha']);
-        if ($fecha === null) {
-            return null;
-        }
-
-        return new File([
-            'fecha' => $this->tryGetExcelDate($row['fecha']),
-            'folio' => $row['folio'],
-            'distrito' => $row['distrito'],
-            'cantidad_detenidos' => $this->tryConvertItToNumber($row['cantidad_de_detenidos']),
-            'nombre' => $row['nombre_s'],
-            'calle_1' => isset($row['calle_1']) ? $row['calle_1'] : $row['calle'],
-            'cruce_2' => isset($row['cruce_2']) ? $row['calle_2'] : '',
-            'colonia' => $row['colonia'],
-            'altitud' => $row['altitud'],
-            'latitud' => $row['latitud'],
-            'observaciones' => $row['observaciones'],
-        ]);
+{
+    $folio = data_get($row, 'folio');
+    if ($folio && in_array($folio, $this->folios)) {
+        return null;
     }
+    $this->folios[] = $folio;
+
+    $fecha = $this->tryGetExcelDate(data_get($row, 'fecha'));
+    if ($fecha === null) {
+        return null;
+    }
+
+    return new File([
+        'fecha' => $fecha,
+        'folio' => $folio,
+        'distrito' => data_get($row, 'distrito'),
+        'cantidad_detenidos' => $this->tryConvertItToNumber(data_get($row, 'cantidad_de_detenidos')),
+        'nombre' => data_get($row, 'nombre_s'),
+        'calle_1' => data_get($row, 'calle_1', data_get($row, 'calle')),
+        'cruce_2' => data_get($row, 'cruce_2', ''),
+        'colonia' => data_get($row, 'colonia'),
+        'altitud' => data_get($row, 'altitud'),
+        'latitud' => data_get($row, 'latitud'),
+        'observaciones' => data_get($row, 'observaciones'),
+    ]);
+}
 
     public function tryConvertItToNumber($excelNumber): int
     {
