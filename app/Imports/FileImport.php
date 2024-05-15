@@ -5,17 +5,22 @@ namespace App\Imports;
 use App\Models\File;
 use Illuminate\Support\Facades\Log;
 use Maatwebsite\Excel\Concerns\SkipsEmptyRows;
+use Maatwebsite\Excel\Concerns\SkipsFailures;
 use Maatwebsite\Excel\Concerns\SkipsOnError;
 use Maatwebsite\Excel\Concerns\SkipsOnFailure;
 use Maatwebsite\Excel\Concerns\ToModel;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
 use Maatwebsite\Excel\Concerns\WithValidation;
 use Maatwebsite\Excel\Validators\Failure;
+use Maatwebsite\Excel\Concerns\Importable;
 use Throwable;
+use Carbon\Carbon;
+
 
 
 class FileImport implements ToModel, WithHeadingRow, WithValidation, SkipsEmptyRows, SkipsOnError, SkipsOnFailure
 {
+    use Importable, SkipsFailures;
     private $folios = [];
     /**
     * @param array $row
@@ -29,6 +34,11 @@ class FileImport implements ToModel, WithHeadingRow, WithValidation, SkipsEmptyR
             return null;
         }
         $this->folios[] = $row['folio'];
+
+        $fecha = $this->tryGetExcelDate($row['fecha']);
+        if ($fecha === null) {
+            return null;
+        }
 
         return new File([
             'fecha' => $this->tryGetExcelDate($row['fecha']),
@@ -55,15 +65,20 @@ class FileImport implements ToModel, WithHeadingRow, WithValidation, SkipsEmptyR
         }
     }
 
-    public function tryGetExcelDate($excelDate): \Carbon\Carbon|string
+    public function tryGetExcelDate($excelDate)
     {
         try {
-             $date = \PhpOffice\PhpSpreadsheet\Shared\Date::excelToDateTimeObject($excelDate)->format('Y-m-d');
-             // To Carbon
-            return \Carbon\Carbon::parse($date);
-        } catch (\Exception) {
-            Log::info('Error al convertir a fecha: ' . $excelDate);
-            return $excelDate;
+            if (is_numeric($excelDate)) {
+                $date = \PhpOffice\PhpSpreadsheet\Shared\Date::excelToDateTimeObject($excelDate)->format('Y-m-d');
+                return \Carbon\Carbon::parse($date);
+            }
+            if (is_string($excelDate) && Carbon::hasFormat($excelDate, 'Y-m-d')) {
+                return \Carbon\Carbon::parse($excelDate);
+            }
+            return null;
+        } catch (\Exception $e) {
+            Log::info('Error al convertir a fecha: ' . $excelDate . ' - ' . $e->getMessage());
+            return null;
         }
     }
 
@@ -76,11 +91,14 @@ class FileImport implements ToModel, WithHeadingRow, WithValidation, SkipsEmptyR
 
     public function onError(Throwable $e)
     {
-        // TODO: Implement onError() method.
+        Log::error('Error during import: ' . $e->getMessage());
     }
 
     public function onFailure(Failure ...$failures)
     {
-        // TODO: Implement onFailure() method.
+        foreach ($failures as $failure) {
+            // Log each failure message or handle it as needed
+            Log::warning('Validation failure on row ' . $failure->row() . ': ' . implode(', ', $failure->errors()));
+        }
     }
 }
