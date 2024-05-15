@@ -12,14 +12,14 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('files', function (Blueprint $table) {
-            $table->id();
-            $table->string('fecha');
-            $table->string('folio') -> unique();
+            $table->id() -> unique();
+            $table->string('fecha') -> nullable();
+            $table->string('folio');
             $table->string('distrito');
             $table->integer('cantidad_detenidos');
             $table->string('nombre');
             $table->string('calle_1');
-            $table->string('cruce_2');
+            $table->string('cruce_2') -> nullable();
             $table->string('colonia');
             $table->string('altitud');
             $table->string('latitud');
